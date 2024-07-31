@@ -197,4 +197,4 @@ def query():
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=True)
