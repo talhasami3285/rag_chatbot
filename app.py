@@ -1,4 +1,6 @@
 
+
+
 # from api import apikey
 from flask import Flask, request, jsonify,Response
 import pandas as pd
@@ -58,7 +60,7 @@ def google_search(query):
         "engine": "google"
     }
     print("Searching Google : ",query)
-    response = requests.get("https:/serpapi.com/search", params=params)
+    response = requests.get("https://serpapi.com/search", params=params)
     results = response.json()
     text_results = results.get("organic_results", [])
     image_results = results.get("inline_images", [])
@@ -72,7 +74,7 @@ def google_search(query):
             "api_key": serp_api_key,
             "tbm": "isch"  # Image search
         }
-        image_response = requests.get("https:/serpapi.com/search", params=image_params)
+        image_response = requests.get("https://serpapi.com/search", params=image_params)
         image_results = image_response.json().get("images_results", [])
 
     if not video_results:
@@ -82,7 +84,7 @@ def google_search(query):
             "api_key": serp_api_key,
             "tbm": "vid"  # Video search
         }
-        video_response = requests.get("https:/serpapi.com/search", params=video_params)
+        video_response = requests.get("https://serpapi.com/search", params=video_params)
         video_results = video_response.json().get("video_results", [])
 
     # Log the response for debugging
