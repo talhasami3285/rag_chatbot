@@ -44,8 +44,8 @@ if not serp_api_key:
 
 def folder_check(folder_path):
     """Create a folder if it does not already exist."""
-    if not os.path.exists("chats//"+folder_path):
-        os.makedirs("chats//"+folder_path)
+    if not os.path.exists("chats\\"+folder_path):
+        os.makedirs("chats\\"+folder_path)
         print(f"Folder created: {folder_path}")
     else:
         print(f"Folder already exists: {folder_path}")
@@ -57,6 +57,7 @@ def google_search(query):
         "api_key": serp_api_key,
         "engine": "google"
     }
+    print("Searching Google : ",query)
     response = requests.get("https://serpapi.com/search", params=params)
     results = response.json()
     text_results = results.get("organic_results", [])
@@ -93,13 +94,13 @@ def google_search(query):
                 "title": result.get("title"),
                 "snippet": result.get("snippet"),
                 "link": result.get("link")
-            } for result in text_results
+            } for result in text_results[:5]
         ],
         "image_results": [
             {
                 "thumbnail": result.get("thumbnail"),
                 "link": result.get("link")
-            } for result in image_results
+            } for result in image_results[:5]
         ],
         "video_results": [
             {
@@ -113,22 +114,44 @@ def google_search(query):
                 "question": question.get("question"),
                 "snippet": question.get("snippet"),
                 "link": question.get("link")
-            } for question in related_questions
+            } for question in related_questions[:5]
         ]
     }
 #################################################### COUNT TOKEN
 
 
+def extract_between_triple_backticks(text):
+    """
+    Extracts the substring from text that is between triple backticks (```).
 
+    Parameters:
+    text (str): The input string from which to extract the substring.
 
-# def findproperty_citywise(city):
-#     df = pd.DataFrame(get_listing())
-#     url = 'https://www.estraha.com/property-detail/'
-#     df['URL'] = url + df['property ID'].astype(str)
-#     json_str = json.dumps(df.to_dict(orient='records'), ensure_ascii=False, indent=4)
-            
+    Returns:
+    str: The extracted substring, or an empty string if triple backticks are not found.
+    """
+    match = re.search(r'```(.*?)```', text, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return ""
+def extract_between_backticks(text):
+    """
+    Extracts the substring from text that is between backticks (`).
+
+    Parameters:
+    text (str): The input string from which to extract the substring.
+
+    Returns:
+    str: The extracted substring, or an empty string if backticks are not found.
+    """
+    try:
+        start_index = text.index('`') + 1
+        end_index = text.index('`', start_index)
+        return text[start_index:end_index]
+    except ValueError:
+        return "" 
 ############## GPT PROMPT ####################
-def gpt(inp,prompt):
+def gpt(inp,listing):
     systems = {"role": "system", "content": """ 
               You're an real state AI agent that is connected with google serp API. whenever you need data from google return 
             ```
@@ -137,12 +160,20 @@ def gpt(inp,prompt):
             
             you'll get the data in system chat.
                IMPORTANT: Dont do google search unnecessary only do when its needed.
-               IMPORTANT: ONLY RETURN GOOGLE SEACH QUERY WHEN YOU NEED DONT REPLY ANOTHER STUFF
+               IMPORTANT: ONLY RETURN GOOGLE SEARCH QUERY WHEN YOU NEED DONT REPLY ANOTHER STUFF.
+               IMPORTANT: Prefare GOOGLE SEARCH WHENEVER USE ASK ABOUT ANY PROPERTY use three backlist for search
               """}
     new_inp = inp
     new_inp.insert(0,systems)
+    if listing != "":
+        system2 = {"role":"system","content":f"The properties in JSON"+str(listing['text_results'])+" Now send this to User with some Detail and URLs make it proper message"}
+        new_inp.insert(1,system2)
+    for item in new_inp:
+        if 'search_results' in item:
+            del item['search_results']
+    
     completion = client.chat.completions.create(
-    model="llama-3.1-70b-versatile", 
+    model="llama3-70b-8192", 
     messages=new_inp
     )
     return completion
@@ -153,7 +184,7 @@ def get_chats(id):
     isexist = os.path.exists(path)
     if isexist:
         data = pd.read_json(path)
-        print(data)
+        # print(data)
         chats = data.chat
         return  list(chats)
     else:
@@ -188,62 +219,33 @@ def write_chat(new_data, id):
         json.dump(file_data, file, indent = 4)
 
 
-####################################### Funtion to convert str to JSON
-def str_to_json(json_str):
-    """
-    Convert a JSON-formatted string to a Python dictionary.
+
     
-    Parameters:
-    - json_str: A string in JSON format.
-    
-    Returns:
-    - A Python dictionary representing the JSON object.
-    """
-    try:
-        return  json.loads(json_str)
-    except json.JSONDecodeError:
-        print("Error: The string could not be converted to JSON.")
-        return 'None'
-    
-
-
-########################################## Fetch a Json from ``
-def fetch_content_between_backticks(text):
-    """
-    Fetches and returns all occurrences of text found between backticks in the given string.
-
-    Parameters:
-    - text: A string that may contain one or more segments enclosed in backticks.
-
-    Returns:
-    - A list of strings found between backticks. Returns an empty list if no such text is found.
-    """
-    text = text.replace("\n","")
-    text = text.replace("``","")
-    # text = text.replace("`","")
-    text = text.replace("json","")
-    pattern = r"`(.*?)`"
-    matches = re.findall(pattern, text)
-    return matches
 
 
 
 ##################################
 def handle_prompt(prompt,path):
-        write_chat({"role":"user","content":prompt},path)
+        write_chat({"role":"user","content":prompt,"search_results":[]},path)
         # print()
         chats = get_chats(path)
         chats = chats[-6:]
         print(chats)
-        print("GETCHATS \n\n ",chats)
-        send = gpt(chats,prompt)
+        # print("GETCHATS \n\n ",chats)
+        send = gpt(chats,"")
         
         reply = send.choices[0].message.content
         print("reply   ...............:  ",reply)
-        if "`" in str(reply) or "google search:" in str(reply):
+        if "`" in str(reply) :
+            if "```" in str(reply):
+                print('\n\nBacklist Found\n\n: ',reply)
+                reply = extract_between_triple_backticks(str(reply))
+            else:
+                reply = extract_between_backticks(str(reply))
 
-            print('\n\nBacklist Found\n\n: ',reply)
 
+        
+            # extract_between_backticks
             reply = reply.replace("`","")
 
             listing = ""
@@ -254,12 +256,14 @@ def handle_prompt(prompt,path):
             if listing !=  'None':
                 print("we hare at 1")
                 # print("We got listing : ",listing)
-                write_chat({"role":"system","content":f"The properties in JSON"+str(listing)+" Now send this to User with some Detail and URLs make it proper message"},path)
+                # write_chat({"role":"system","content":f"The properties in JSON"+str(listing['text_results'])+" Now send this to User with some Detail and URLs make it proper message"},path)
                 chats = get_chats(path)
                 chats = chats[-6:]
-                send = gpt(chats,prompt)
+                send = gpt(chats,listing)
+                # print("Get Google response from GPT: ",send)
                 reply = send.choices[0].message.content
-                write_chat({"role":"assistant","content":reply},path)   
+                print("Get Google response from GPT: ",reply)
+                write_chat({"role":"assistant","content":reply,"search_results":listing},path)   
                 # return Response(reply, mimetype='text/html')
                 reply = reply.replace("<b>","<br><b>")
                 return {"message":reply,"status":"OK","search_result":listing}
@@ -283,8 +287,8 @@ def check_user():
     prompt = request.json['prompt']
     chat_id = request.json['chat_id']
     folder_check(ids)
-    print("asd")
-    path = str(os.getcwd())+'//chats//'+ids+"//"+chat_id+'.json'
+    # print("asd")
+    path = str(os.getcwd())+'\\chats\\'+ids+"\\"+chat_id+'.json'
     print(path)
     # path = str(os.getcwd())+'\\'+"5467484.json"
     isexist = os.path.exists(path)
@@ -322,7 +326,7 @@ def check_user():
 def get_chatss():
     ids = request.args.get('user_id')
     chat_id = request.args.get('chat_id')
-    path = str(os.getcwd())+'//chats//'+ids+"//"+chat_id+'.json'
+    path = str(os.getcwd())+'\\chats\\'+ids+"\\"+chat_id+'.json'
     print(path)
     return jsonpickle.encode(get_chats(path))
 
@@ -333,9 +337,13 @@ def put_chats():
     ids = request.json['user_id']
     prompt = request.json['prompt']
     chat_id = request.json['chat_id']
-    path = str(os.getcwd())+'//chats//'+ids+"//"+chat_id+'.json'
+    path = str(os.getcwd())+'\\chats\\'+ids+"\\"+chat_id+'.json'
     a = handle_prompt(prompt,path)
     return a
+
+
+
+
 ######################################################### clear chats
 @app.route('/delete_chats', methods=['POST'])
 @cross_origin()
@@ -350,33 +358,8 @@ def clear_chatss():
     except :
         return { "status":"error","message":"Something went wrong,chat doesn't exist" }
 
-################################ GET ALL USER'S IDs
-@app.route('/get_users', methods=['POST'])
-@cross_origin()
-def extract_json_filenames():
-    """
-    Extracts the names of all JSON files in the specified directory,
-    removes their '.json' extensions, and returns a list of the names.
 
-    Parameters:
-    - directory: Path to the directory containing the JSON files.
 
-    Returns:
-    - A list of strings representing the names of the JSON files, without the '.json' extension.
-    """
-    # List to store the names of JSON files without extension
-    cwd = str(os.getcwd())+'//chats//'
-    json_filenames_without_extension = []
-    
-    # Iterate through all files in the specified directory
-    for filename in os.listdir(cwd):
-        # Check if the file is a JSON file by looking at its extension
-        if filename.endswith('.json'):
-            # Remove the '.json' extension and add it to the list
-            name_without_extension = os.path.splitext(filename)[0]
-            json_filenames_without_extension.append(name_without_extension)
-    
-    return json_filenames_without_extension
 
 ################################ GET ALL USER'S IDs
 @app.route('/conversations', methods=['GET'])
@@ -405,7 +388,7 @@ def conversations():
                     if 'chat' in data and isinstance(data['chat'], list) and len(data['chat']) > 0:
                         first_message = data['chat'][0].get('content', 'No content')
                         json_files_with_first_message.append({
-                            "file_name": filename,
+                            "file_name": filename.replace(".json",""),
                             "first_message": first_message
                         })
     except Exception as e:
@@ -414,5 +397,5 @@ def conversations():
     return json_files_with_first_message
 
 if __name__ == '__main__':
-    app.run(port=5000,host='0.0.0.0',threaded=True)
+    app.run(port=5002,host='0.0.0.0',threaded=True)
     
