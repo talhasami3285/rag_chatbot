@@ -338,6 +338,7 @@ def put_chats():
     prompt = request.json['prompt']
     chat_id = request.json['chat_id']
     path = str(os.getcwd())+'//chats//'+ids+"//"+chat_id+'.json'
+    print(path)
     a = handle_prompt(prompt,path)
     return a
 
