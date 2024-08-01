@@ -378,6 +378,41 @@ def extract_json_filenames():
     
     return json_filenames_without_extension
 
+################################ GET ALL USER'S IDs
+@app.route('/conversations', methods=['GET'])
+@cross_origin()
+def conversations():
+    """
+    Fetches all JSON files in the specified directory and reads their content.
+
+    Parameters:
+    directory_path (str): The path of the directory to search for JSON files.
+
+    Returns:
+    dict: A dictionary where keys are file names and values are the content of the JSON files.
+    """
+
+
+    user_id = request.args.get('user_id')
+    path = "chats//"+user_id
+    json_files_with_first_message = []
+    try:
+        for filename in os.listdir(path):
+            if filename.endswith(".json"):
+                file_path = os.path.join(path, filename)
+                with open(file_path, 'r') as f:
+                    data = json.load(f)
+                    if 'chat' in data and isinstance(data['chat'], list) and len(data['chat']) > 0:
+                        first_message = data['chat'][0].get('content', 'No content')
+                        json_files_with_first_message.append({
+                            "file_name": filename,
+                            "first_message": first_message
+                        })
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    return json_files_with_first_message
+
 if __name__ == '__main__':
     app.run(port=5002,host='0.0.0.0',threaded=True)
     
