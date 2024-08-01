@@ -44,8 +44,8 @@ if not serp_api_key:
 
 def folder_check(folder_path):
     """Create a folder if it does not already exist."""
-    if not os.path.exists("chats\\"+folder_path):
-        os.makedirs("chats\\"+folder_path)
+    if not os.path.exists("chats//"+folder_path):
+        os.makedirs("chats//"+folder_path)
         print(f"Folder created: {folder_path}")
     else:
         print(f"Folder already exists: {folder_path}")
@@ -58,7 +58,7 @@ def google_search(query):
         "engine": "google"
     }
     print("Searching Google : ",query)
-    response = requests.get("https://serpapi.com/search", params=params)
+    response = requests.get("https:/serpapi.com/search", params=params)
     results = response.json()
     text_results = results.get("organic_results", [])
     image_results = results.get("inline_images", [])
@@ -72,7 +72,7 @@ def google_search(query):
             "api_key": serp_api_key,
             "tbm": "isch"  # Image search
         }
-        image_response = requests.get("https://serpapi.com/search", params=image_params)
+        image_response = requests.get("https:/serpapi.com/search", params=image_params)
         image_results = image_response.json().get("images_results", [])
 
     if not video_results:
@@ -82,7 +82,7 @@ def google_search(query):
             "api_key": serp_api_key,
             "tbm": "vid"  # Video search
         }
-        video_response = requests.get("https://serpapi.com/search", params=video_params)
+        video_response = requests.get("https:/serpapi.com/search", params=video_params)
         video_results = video_response.json().get("video_results", [])
 
     # Log the response for debugging
@@ -193,7 +193,7 @@ def get_chats(id):
 
 
 def url_fetch(text):    
-    url_pattern = r'https?://[^\s)\]]+'
+    url_pattern = r'https?:/[^/s)/]]+'
 
     # Finding all URLs in the string
     urls = re.findall(url_pattern, text)
@@ -231,14 +231,14 @@ def handle_prompt(prompt,path):
         chats = get_chats(path)
         chats = chats[-6:]
         print(chats)
-        # print("GETCHATS \n\n ",chats)
+        # print("GETCHATS /n/n ",chats)
         send = gpt(chats,"")
         
         reply = send.choices[0].message.content
         print("reply   ...............:  ",reply)
         if "`" in str(reply) :
             if "```" in str(reply):
-                print('\n\nBacklist Found\n\n: ',reply)
+                print('/n/nBacklist Found/n/n: ',reply)
                 reply = extract_between_triple_backticks(str(reply))
             else:
                 reply = extract_between_backticks(str(reply))
@@ -282,15 +282,15 @@ def handle_prompt(prompt,path):
 @app.route('/chat', methods=['POST'])
 @cross_origin()
 def check_user():
-    # image_url = 'https://www.estraha.com/assets/uploads/property_image'
+    # image_url = 'https:/www.estraha.com/assets/uploads/property_image'
     ids = request.json['user_id']
     prompt = request.json['prompt']
     chat_id = request.json['chat_id']
     folder_check(ids)
     # print("asd")
-    path = str(os.getcwd())+'\\chats\\'+ids+"\\"+chat_id+'.json'
+    path = str(os.getcwd())+'//chats//'+ids+"//"+chat_id+'.json'
     print(path)
-    # path = str(os.getcwd())+'\\'+"5467484.json"
+    # path = str(os.getcwd())+'//'+"5467484.json"
     isexist = os.path.exists(path)
     if isexist:
         # try:
@@ -326,7 +326,7 @@ def check_user():
 def get_chatss():
     ids = request.args.get('user_id')
     chat_id = request.args.get('chat_id')
-    path = str(os.getcwd())+'\\chats\\'+ids+"\\"+chat_id+'.json'
+    path = str(os.getcwd())+'//chats//'+ids+"//"+chat_id+'.json'
     print(path)
     return jsonpickle.encode(get_chats(path))
 
@@ -337,7 +337,7 @@ def put_chats():
     ids = request.json['user_id']
     prompt = request.json['prompt']
     chat_id = request.json['chat_id']
-    path = str(os.getcwd())+'\\chats\\'+ids+"\\"+chat_id+'.json'
+    path = str(os.getcwd())+'//chats//'+ids+"//"+chat_id+'.json'
     a = handle_prompt(prompt,path)
     return a
 
@@ -351,7 +351,7 @@ def clear_chatss():
     ids = request.json['user_id']
 
     try:
-        path =os.remove(str(os.getcwd())+'//chats//'+ids+'.json')
+        path =os.remove(str(os.getcwd())+'/chats/'+ids+'.json')
      
         return {"status":"OK","message":"success"}
  
@@ -377,7 +377,7 @@ def conversations():
 
 
     user_id = request.args.get('user_id')
-    path = "chats//"+user_id
+    path = "chats/"+user_id
     json_files_with_first_message = []
     try:
         for filename in os.listdir(path):
