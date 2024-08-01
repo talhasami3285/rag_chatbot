@@ -288,7 +288,7 @@ def check_user():
     chat_id = request.json['chat_id']
     folder_check(ids)
     # print("asd")
-    path = str(os.getcwd())+'//chats//'+ids+"//"+chat_id+'.json'
+    path = 'chats//'+ids+"//"+chat_id+'.json'
     print(path)
     # path = str(os.getcwd())+'//'+"5467484.json"
     isexist = os.path.exists(path)
@@ -326,7 +326,7 @@ def check_user():
 def get_chatss():
     ids = request.args.get('user_id')
     chat_id = request.args.get('chat_id')
-    path = str(os.getcwd())+'//chats//'+ids+"//"+chat_id+'.json'
+    path = 'chats//'+ids+"//"+chat_id+'.json'
     print(path)
     return jsonpickle.encode(get_chats(path))
 
@@ -337,7 +337,7 @@ def put_chats():
     ids = request.json['user_id']
     prompt = request.json['prompt']
     chat_id = request.json['chat_id']
-    path = str(os.getcwd())+'//chats//'+ids+"//"+chat_id+'.json'
+    path = 'chats//'+ids+"//"+chat_id+'.json'
     print(path)
     a = handle_prompt(prompt,path)
     return a
