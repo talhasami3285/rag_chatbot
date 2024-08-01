@@ -397,5 +397,6 @@ def conversations():
     return json_files_with_first_message
 
 if __name__ == '__main__':
-    app.run(port=5002,host='0.0.0.0',threaded=True)
+    app.run(port=5000,host='0.0.0.0',threaded=True)
+    
     
